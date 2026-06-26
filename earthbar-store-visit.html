@@ -649,7 +649,7 @@ function initHome() {
   STORES.forEach((s, i) => {
     const opt = document.createElement('option');
     opt.value = i;
-    opt.textContent = s.name;
+    opt.textContent = s.label;
     sel.appendChild(opt);
   });
 
