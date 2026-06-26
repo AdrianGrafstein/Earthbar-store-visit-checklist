@@ -395,6 +395,15 @@ textarea{resize:vertical;min-height:70px;}
     </div>
 
     <button class="btn-logout" onclick="signOut()">Sign out</button>
+
+    <!-- DEMO MODE: remove before production -->
+    <div style="margin-top:32px;padding-top:20px;border-top:1px dashed #ccc;text-align:center;">
+      <div style="font-size:11px;color:#aaa;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">Demo / Testing</div>
+      <select id="demo-store-select" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ccc;font-size:14px;margin-bottom:10px;background:white;">
+        <option value="">— Pick a store —</option>
+      </select>
+      <button class="btn btn-outline-green" onclick="startDemoVisit()" style="width:100%;">▶ Start Without Location Check</button>
+    </div>
   </div>
 </div>
 
@@ -633,7 +642,28 @@ function initHome() {
     firstName ? `Welcome, ${firstName}` : '';
 
   document.getElementById('form-unavailable').style.display = 'none';
+
+  // Populate demo store picker
+  const sel = document.getElementById('demo-store-select');
+  sel.innerHTML = '<option value="">— Pick a store —</option>';
+  STORES.forEach((s, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = s.name;
+    sel.appendChild(opt);
+  });
+
   showScreen('home');
+}
+
+function startDemoVisit() {
+  const sel = document.getElementById('demo-store-select');
+  const idx = sel.value;
+  if (idx === '') { toast('Pick a store first'); return; }
+  S.store = STORES[parseInt(idx)];
+  S.startLat = S.store.lat;
+  S.startLng = S.store.lng;
+  beginChecklist();
 }
 
 // ─── START VISIT (auto-detect store) ─────────────────────────────────────────
