@@ -1140,11 +1140,109 @@ function renderSummary() {
   document.getElementById('summary-body').innerHTML = html;
 }
 
+// ─── DB ID MAPS ──────────────────────────────────────────────────────────────
+const STORE_DB_IDS = {
+  'la-brentwood':'56affec0-c3b8-5aec-870d-02b5114a0f4b','la-westwood':'c3d7c91d-1743-5bd1-a966-3bb856d17130',
+  'la-cc':'28b4a675-3dcb-5301-bc2d-cda985f0b5fe','la-dtla':'e6a4de74-5432-532e-aa31-c821e5af7f02',
+  'weho-sm':'0a9dec27-d93f-59ab-b3ed-51b67e01f936','weho-sunset':'809228d4-a198-51fa-b2f1-e69bcc83d89f',
+  'la-encino':'c206617b-9772-5180-9815-9097a0adabe2','la-pasadena':'e6e33552-d949-52e2-b250-0f83a302faf8',
+  'la-culver':'df3ef440-21c7-5ea2-a367-3ed6b6504abd','ca-hawthorne':'9af5d5e1-166b-539a-a88b-325c4c42c72e',
+  'ca-hb':'161aa29e-a28c-5fce-864d-63ef4a21d82e','ca-newport':'6c722ed5-3e44-5ec0-9377-ac4437db9ef9',
+  'ca-irvine':'69a34913-1474-562d-b34e-cfbb5402c8d1','ca-lacosta':'df6d97fd-e7e4-5b68-9752-d4764707498f',
+  'ca-sandiego':'14ec814c-0fb9-5623-b2ee-0381d661befd','ny-columbus':'24c2e35a-30c3-58fa-8866-e620e19c8273',
+  'ny-broadway':'64466b48-676e-5798-9a45-4effb5c36b36','ny-hudsonyards':'2c295a48-12a2-511a-8bf9-0e4d9a200faa',
+  'ny-e54':'d4201183-0842-5869-8948-2937fbd95288','ny-e61':'88277844-c7af-5dea-a432-2ec5d3917d6a',
+  'ny-lexington':'ca348a49-a021-5abc-bf8b-789f319bfecc','ny-e85':'eee9cec7-e74d-5f93-8fc7-3eaf0b8b7f54',
+  'ny-2ndave':'6a8bd274-8b09-5a20-96c1-2e50be527611','ny-grandcentral':'4b974acd-70cb-575c-b52a-9ef0717ba917',
+  'ny-parkave':'dcdcfc6c-bea9-5a03-b579-527d2b998d53','ny-amsterdam':'2ab5eb72-7a8c-5d25-a8f9-01d88c0a9513',
+  'ny-chelsea':'01fa8f2d-fef5-5786-8c3e-86d723ca1663','ny-hudson':'bb62bcba-4eab-553a-aa71-890a6d34f553',
+  'ny-liberty':'5933e094-45d9-5130-90b5-e040a42beeb6','ny-wallst':'74816cc7-97ba-56db-8e40-955427e14882',
+  'ny-soho':'be1d4ebd-cf68-50d9-b91f-5843263c9f5c','ny-flatiron':'6cbc9744-b85c-54f8-8da5-1b9bcba390f2',
+  'ny-brooklyn':'e646fe32-4d16-5a1e-bbbd-68ddc8f1313b','beam-lb':'acc9aa20-2628-5da3-8fcb-ac0b4f403053',
+  'beam-wpb':'8e8b0f1a-efd3-5cff-8675-560831d0577a'
+};
+const CAT_DB_IDS = {
+  'kitchen':'ff99f410-aa84-5b54-b08b-630f48aa5416','front':'fe11d7cc-cda7-58bb-859f-cbc7745c0fa1',
+  'merch':'6ea2f054-a83a-5e8d-b31c-1ba9f22eab31','staff':'8ed8b6fc-9a18-55c6-9ab4-e44b8590b39b',
+  'equipment':'035fb24b-58c9-5b04-843b-889b60d03795'
+};
+const ITEM_DB_IDS = {
+  'k1':'648c92ed-15e3-5429-8f58-6f9482513612','k2':'eeffd9c9-c7b6-5bcc-a9d4-fe4ec5e2c408',
+  'k3':'f993f46a-21fe-57d3-a665-7456f949beb4','k4':'01d63b7d-c3e0-5c69-8a8c-573614faf92c',
+  'k5':'0e66dcf3-ebbd-5b28-bebd-a837e1d69aa8','k6':'6768e9bf-9229-534c-9bfd-d645719b655a',
+  'k7':'ce242b0f-579a-5599-b771-fe023ca6334e','f1':'2de7d222-3412-5784-a105-863a13ec3ec5',
+  'f2':'f042e16d-9dd2-53b7-98ab-9dcc8fa24ef1','f3':'eeb5a9b0-b184-525c-9c95-3e6177bc0b90',
+  'f4':'49c17f23-3fdb-5c91-84b8-d86c2bb1e923','f5':'18e019df-1667-56d3-8d77-97bc9f44b4a8',
+  'f6':'8b1b4e19-f4a1-5c64-afe0-c05625e4de42','m1':'894f03b3-38df-52d9-8eb4-5bb0e3b60a9a',
+  'm2':'c2573651-fae7-515c-9fd8-674d309d5f05','m3':'c60ec07c-ac76-529b-97ba-d23ffaa51fbc',
+  'm4':'776abbcd-4b1a-5ac9-a32e-30d58c378602','m5':'92e2b151-c8dc-59c1-9fcd-88c496f2a62b',
+  's1':'60a63814-83b0-5041-9920-41b686892ac3','s2':'94145ffa-604b-5efb-9dc1-883cad451383',
+  's3':'1888f291-7b93-5987-9759-01bf2da6b37f','s4':'b0110001-b108-5e89-99bd-9d14e02002f4',
+  's5':'a50811ad-b346-5c45-a21f-2341c312827e','s6':'614639aa-b65a-5b66-8cd4-989a6592ffe2',
+  'e1':'23c3c9fb-23e6-59d7-b317-dd614478e685','e2':'adc3b4aa-ffe7-5cd2-b2e9-6bc06eceb2e2',
+  'e3':'cd931a12-7697-588b-a6c4-603d2589f7aa','e4':'ee3a5589-54fc-50f2-a9b0-60056cf59478',
+  'e5':'7862fe14-5a13-5df2-96e9-1d0f55eb671a','e6':'f04864d6-cad9-5161-89d4-ede7a25d1efa'
+};
+
 // ─── SUBMIT ──────────────────────────────────────────────────────────────────
-function submitVisit() {
+async function submitVisit() {
   S.submitTime = new Date();
   stopLocationPings();
   try { localStorage.removeItem('eb_draft'); } catch(e){}
+
+  const {score} = calcScore();
+  const storeDbId = STORE_DB_IDS[S.store.id];
+
+  // Insert form_submission
+  const { data: sub, error: subErr } = await sb.from('form_submissions').insert({
+    store_id: storeDbId,
+    district_leader_id: S.user.id,
+    status: 'submitted',
+    start_lat: S.startLat ?? null,
+    start_lng: S.startLng ?? null,
+    started_at: S.visitStart?.toISOString(),
+    submitted_at: S.submitTime.toISOString(),
+    overall_grade: score,
+    flagged: false,
+    draft_data: { answers: S.answers, itemNotes: S.itemNotes, catNotes: S.catNotes }
+  }).select('id').single();
+
+  if (subErr) {
+    console.error('Submission error:', subErr);
+    toast('Error saving submission — please try again');
+    return;
+  }
+
+  const submissionId = sub.id;
+  S.submissionId = submissionId;
+
+  // Build form_responses rows
+  const responses = [];
+  for (const cat of CATEGORIES) {
+    const catDbId = CAT_DB_IDS[cat.id];
+    for (const item of cat.items) {
+      const key = cat.id + '-' + item.id;
+      const ans = S.answers[key];
+      if (ans === undefined) continue;
+      let passed = null;
+      if (ans === 'pass' || ans === 'yes') passed = true;
+      else if (ans === 'fail' || ans === 'no') passed = false;
+      // ratings: passed stays null
+      responses.push({
+        submission_id: submissionId,
+        item_id: ITEM_DB_IDS[item.id],
+        category_id: catDbId,
+        passed,
+        note: S.itemNotes[key] || null,
+      });
+    }
+  }
+
+  if (responses.length > 0) {
+    const { error: respErr } = await sb.from('form_responses').insert(responses);
+    if (respErr) console.error('Response save error:', respErr);
+  }
+
   renderComplete();
   showScreen('complete');
 }
