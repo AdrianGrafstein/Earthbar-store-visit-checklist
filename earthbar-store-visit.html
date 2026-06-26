@@ -138,6 +138,19 @@ textarea{resize:vertical;min-height:70px;}
 }
 .item-note-field:focus{outline:none;border-color:#1B3A1E;}
 
+/* ITEM PHOTO */
+.item-photo-btn{
+  background:none;border:none;color:#1B3A1E;font-size:13px;
+  cursor:pointer;padding:6px 0 0;font-family:inherit;
+  display:inline-flex;align-items:center;gap:4px;margin-left:12px;
+}
+.item-photo-wrap{margin-top:8px;}
+.item-photo-preview{max-width:100%;max-height:140px;border-radius:8px;object-fit:cover;display:block;}
+.item-photo-remove{
+  background:none;border:none;color:#E53935;font-size:12px;
+  cursor:pointer;padding:4px 0;font-family:inherit;text-decoration:underline;
+}
+
 /* PHOTO ZONE */
 .photo-zone{
   background:white;border-radius:14px;padding:16px;margin-bottom:16px;
@@ -573,6 +586,7 @@ const S = {
   answers: {},
   itemNotes: {},
   catPhotos: {},
+  itemPhotos: {},
   catNotes: {},
   visitStart: null,
   submitTime: null,
@@ -857,18 +871,31 @@ function buildItemCard(catId, item) {
     `;
   }
 
+  const itemPhoto = S.itemPhotos[key] || null;
   return `
     <div class="${cardCls}" id="card-${key}">
       <div class="item-q">${item.q}</div>
       ${ansHtml}
-      <button class="note-toggle-btn" onclick="toggleNote('${key}')">
-        ${note ? '✏️ Edit note' : '+ Add note'}
-      </button>
+      <div style="display:flex;align-items:center;flex-wrap:wrap;">
+        <button class="note-toggle-btn" onclick="toggleNote('${key}')">
+          ${note ? '✏️ Edit note' : '+ Add note'}
+        </button>
+        <button class="item-photo-btn" onclick="document.getElementById('ipf-${key}').click()">
+          📷 ${itemPhoto ? 'Replace photo' : 'Add photo'}
+        </button>
+        <input type="file" id="ipf-${key}" accept="image/*" capture="environment" style="display:none"
+          onchange="handleItemPhoto(event,'${key}')">
+      </div>
       <div id="nf-${key}" style="display:${note?'block':'none'}">
         <textarea class="item-note-field" rows="2" placeholder="Note…"
           oninput="S.itemNotes['${key}']=this.value; saveDraft()"
         >${note}</textarea>
       </div>
+      ${itemPhoto ? `
+      <div class="item-photo-wrap" id="ipw-${key}">
+        <img class="item-photo-preview" src="${itemPhoto}" alt="">
+        <button class="item-photo-remove" onclick="removeItemPhoto(event,'${key}')">✕ Remove photo</button>
+      </div>` : `<div class="item-photo-wrap" id="ipw-${key}" style="display:none"></div>`}
     </div>
   `;
 }
@@ -938,6 +965,39 @@ function removePhoto(e, catId) {
   delete S.catPhotos[catId];
   saveDraft();
   renderCat(S.catIdx);
+}
+
+function handleItemPhoto(e, key) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    S.itemPhotos[key] = ev.target.result;
+    saveDraft();
+    // Update preview in-place without re-rendering the whole section
+    const wrap = document.getElementById('ipw-'+key);
+    if (wrap) {
+      wrap.style.display = 'block';
+      wrap.innerHTML = `<img class="item-photo-preview" src="${ev.target.result}" alt="">
+        <button class="item-photo-remove" onclick="removeItemPhoto(event,'${key}')">✕ Remove photo</button>`;
+    }
+    const btn = e.target.previousElementSibling;
+    if (btn) btn.textContent = '📷 Replace photo';
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeItemPhoto(e, key) {
+  e.stopPropagation();
+  delete S.itemPhotos[key];
+  saveDraft();
+  const wrap = document.getElementById('ipw-'+key);
+  if (wrap) { wrap.style.display = 'none'; wrap.innerHTML = ''; }
+  const inp = document.getElementById('ipf-'+key);
+  if (inp) {
+    const btn = inp.previousElementSibling;
+    if (btn) btn.textContent = '📷 Add photo';
+  }
 }
 
 // ─── CATEGORY COMPLETION ─────────────────────────────────────────────────────
@@ -1228,7 +1288,7 @@ function exitDiscard() {
 function newVisit() {
   Object.assign(S, {
     store:null, catIdx:0, answers:{}, itemNotes:{},
-    catPhotos:{}, catNotes:{}, visitStart:null, submitTime:null,
+    catPhotos:{}, itemPhotos:{}, catNotes:{}, visitStart:null, submitTime:null,
     submissionId:null,
   });
 }
