@@ -343,18 +343,23 @@ textarea{resize:vertical;min-height:70px;}
     <svg width="172" height="65" aria-label="Earthbar"><use href="#eb-logo-sym" fill="#1B3A1E"/></svg>
     <div class="login-tagline">Store Visit Checklist</div>
     <div class="login-divider"></div>
-    <div class="login-heading">Sign in to get started</div>
-    <div class="login-sub">Use your Earthbar email address to log in.</div>
-    <button class="btn-azure" onclick="signIn()">
-      <svg width="20" height="20" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M10 0H0V10H10V0Z" fill="#F25022"/>
-        <path d="M21 0H11V10H21V0Z" fill="#7FBA00"/>
-        <path d="M10 11H0V21H10V11Z" fill="#00A4EF"/>
-        <path d="M21 11H11V21H21V11Z" fill="#FFB900"/>
-      </svg>
-      Sign in with Earthbar
-    </button>
-    <div class="login-footer">Access restricted to @earthbar.com accounts.</div>
+    <div id="login-normal">
+      <div class="login-heading">Sign in to get started</div>
+      <div class="login-sub">Use your Earthbar email address to log in.</div>
+      <button class="btn-azure" onclick="signIn()">
+        <svg width="20" height="20" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 0H0V10H10V0Z" fill="#F25022"/>
+          <path d="M21 0H11V10H21V0Z" fill="#7FBA00"/>
+          <path d="M10 11H0V21H10V11Z" fill="#00A4EF"/>
+          <path d="M21 11H11V21H21V11Z" fill="#FFB900"/>
+        </svg>
+        Sign in with Earthbar
+      </button>
+      <div class="login-footer">Access restricted to @earthbar.com accounts.</div>
+    </div>
+    <div id="login-loading" style="display:none">
+      <div class="login-heading" style="font-size:16px;color:#888;">Signing you in…</div>
+    </div>
   </div>
 </div>
 
@@ -567,22 +572,37 @@ const S = {
 
 // ─── AUTH ────────────────────────────────────────────────────────────────────
 window.onload = async () => {
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    S.user = session.user;
-    initHome();
-  } else {
-    showScreen('login');
-  }
+  // Check if we're returning from an OAuth redirect (code in URL or hash token)
+  const urlParams = new URLSearchParams(window.location.search);
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const isOAuthCallback = urlParams.has('code') || hashParams.has('access_token');
 
+  // Register state change listener BEFORE getSession so we don't miss SIGNED_IN
   sb.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_IN' && session) {
       S.user = session.user;
+      // Clean up the URL so the code/token doesn't stay in the address bar
+      history.replaceState(null, '', window.location.pathname);
       initHome();
     } else if (event === 'SIGNED_OUT') {
       showScreen('login');
     }
   });
+
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    S.user = session.user;
+    initHome();
+  } else if (!isOAuthCallback) {
+    // Only show login immediately if we're NOT in the middle of a callback
+    showScreen('login');
+  }
+  // If isOAuthCallback, show login screen with a loading state while code is exchanged
+  if (isOAuthCallback && !session) {
+    showScreen('login');
+    document.getElementById('login-normal').style.display = 'none';
+    document.getElementById('login-loading').style.display = 'block';
+  }
 };
 
 async function signIn() {
