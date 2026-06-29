@@ -746,6 +746,7 @@ function startDemoVisit() {
   S.store = STORES[parseInt(idx)];
   S.startLat = S.store.lat;
   S.startLng = S.store.lng;
+  S.demoMode = true;
   beginChecklist();
 }
 
@@ -1245,8 +1246,8 @@ function completeCategory() {
     return;
   }
 
-  // Require at least one photo per section
-  if (!S.catPhotos[cat.id]) {
+  // Require at least one photo per section (skipped in demo mode)
+  if (!S.demoMode && !S.catPhotos[cat.id]) {
     toast('A photo is required for this section');
     const pz = document.getElementById('pz-'+cat.id);
     if (pz) pz.scrollIntoView({behavior:'smooth', block:'center'});
@@ -1632,7 +1633,7 @@ function newVisit() {
   Object.assign(S, {
     store:null, catIdx:0, answers:{}, itemNotes:{},
     catPhotos:{}, itemPhotos:{}, catNotes:{}, visitStart:null, submitTime:null,
-    submissionId:null,
+    submissionId:null, demoMode:false,
   });
 }
 </script>
