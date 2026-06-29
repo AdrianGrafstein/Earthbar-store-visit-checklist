@@ -934,6 +934,13 @@ async function doConfirmVisit() {
     return;
   }
 
+  // Invoke flag-alert edge function (fire and forget — don't block the UI)
+  sb.functions.invoke('flag-alert', { body: { confirmation_id: _activeConfirmId } })
+    .then(({ data, error }) => {
+      if (error) console.error('Flag alert error:', error)
+      else console.log('Flag alert:', data)
+    })
+
   document.getElementById('gm-confirm-body').innerHTML = `
     <div style="text-align:center;padding:60px 0 20px">
       <div style="font-size:72px;margin-bottom:16px">✅</div>
