@@ -852,6 +852,10 @@ async function openGMConfirm(confirmId) {
       <div class="location-check-title">📍 Location Check</div>
       <div class="location-check-msg" id="gm-loc-msg">Checking your location…</div>
     </div>
+    <div style="margin-top:24px;padding-top:16px;border-top:1px dashed #ccc;text-align:center;">
+      <div style="font-size:11px;color:#aaa;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Demo / Testing</div>
+      <button class="btn btn-outline-gray btn-sm" onclick="demoBypassGMLocation()" style="width:100%;">📍 Bypass Location Check</button>
+    </div>
   `;
 
   const btn = document.getElementById('gm-confirm-btn');
@@ -899,6 +903,17 @@ function _setGMLocMsg(msg, inRange) {
   if (!box || !txt) return;
   box.className = 'location-check-box' + (inRange === true ? ' in-range' : inRange === false ? ' out-of-range' : '');
   txt.textContent = msg;
+}
+
+function demoBypassGMLocation() {
+  // Use the store's own coordinates as a stand-in
+  const storeKey = Object.entries(STORE_DB_IDS).find(([,v]) => v === _activeConfirmData.store_id)?.[0];
+  const store = STORES.find(s => s.id === storeKey);
+  _activeConfirmLat = store?.lat ?? 0;
+  _activeConfirmLng = store?.lng ?? 0;
+  _setGMLocMsg('✓ Location bypassed (demo mode).', true);
+  const btn = document.getElementById('gm-confirm-btn');
+  if (btn) { btn.disabled = false; btn.textContent = '✓ Confirm Visit'; }
 }
 
 async function doConfirmVisit() {
