@@ -751,14 +751,39 @@ function startDemoVisit() {
 }
 
 async function testGMView() {
-  // Temporarily override role to GM for this session so you can test the notification flow
+  // Temporarily override role to GM for testing
   if (!S.profile) await fetchProfile();
   S.profile = { ...S.profile, role: 'gm' };
-  await loadGMNotifications();
+
+  // In test mode, load confirmations where you're the DL (so you can see your own submissions)
+  const { data: confs } = await sb.from('visit_confirmations')
+    .select('*')
+    .eq('dl_id', S.user.id)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+
   const section = document.getElementById('gm-notifications');
-  if (section.style.display === 'none') {
-    toast('No pending confirmations yet — submit a visit first (as DL), then switch to GM view.');
+  const list    = document.getElementById('gm-notification-list');
+
+  if (!confs || confs.length === 0) {
+    toast('No pending confirmations — submit a visit first, then switch to GM view.');
+    section.style.display = 'none';
+    return;
   }
+  section.style.display = 'block';
+  list.innerHTML = confs.map(c => {
+    const dt = new Date(c.visit_submitted_at);
+    const dateStr = dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    const timeStr = dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    return `
+      <div class="notif-card" onclick="openGMConfirm('${c.id}')">
+        <div class="notif-badge">🔔 [TEST] Confirmation Needed</div>
+        <div class="notif-title">${c.store_name}</div>
+        <div class="notif-meta">Visit by <strong>${c.dl_name}</strong></div>
+        <div class="notif-meta">${dateStr} at ${timeStr}</div>
+        <div class="notif-arrow">›</div>
+      </div>`;
+  }).join('');
 }
 
 // ─── GM NOTIFICATIONS ────────────────────────────────────────────────────────
