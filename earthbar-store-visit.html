@@ -451,7 +451,8 @@ textarea{resize:vertical;min-height:70px;}
       <select id="demo-store-select" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ccc;font-size:14px;margin-bottom:10px;background:white;">
         <option value="">— Pick a store —</option>
       </select>
-      <button class="btn btn-outline-green" onclick="startDemoVisit()" style="width:100%;">▶ Start Without Location Check</button>
+      <button class="btn btn-outline-green" onclick="startDemoVisit()" style="width:100%;margin-bottom:8px;">▶ Start Visit (DL view)</button>
+      <button class="btn btn-outline-green" onclick="testGMView()" style="width:100%;border-color:#FFB800;color:#E65100;">🔔 Switch to GM View</button>
     </div>
   </div>
 </div>
@@ -746,6 +747,17 @@ function startDemoVisit() {
   S.startLat = S.store.lat;
   S.startLng = S.store.lng;
   beginChecklist();
+}
+
+async function testGMView() {
+  // Temporarily override role to GM for this session so you can test the notification flow
+  if (!S.profile) await fetchProfile();
+  S.profile = { ...S.profile, role: 'gm' };
+  await loadGMNotifications();
+  const section = document.getElementById('gm-notifications');
+  if (section.style.display === 'none') {
+    toast('No pending confirmations yet — submit a visit first (as DL), then switch to GM view.');
+  }
 }
 
 // ─── GM NOTIFICATIONS ────────────────────────────────────────────────────────
