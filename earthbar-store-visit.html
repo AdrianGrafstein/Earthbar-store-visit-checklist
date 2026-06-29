@@ -920,14 +920,15 @@ async function doConfirmVisit() {
   const btn = document.getElementById('gm-confirm-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Confirming…'; }
 
-  const { error } = await sb.from('visit_confirmations').update({
+  const { data: updated, error } = await sb.from('visit_confirmations').update({
     status: 'confirmed',
     confirmed_at: new Date().toISOString(),
     confirmed_lat: _activeConfirmLat,
     confirmed_lng: _activeConfirmLng
-  }).eq('id', _activeConfirmId);
+  }).eq('id', _activeConfirmId).select();
 
-  if (error) {
+  if (error || !updated || updated.length === 0) {
+    console.error('Confirm error:', error, 'rows updated:', updated?.length);
     toast('Error confirming — please try again');
     if (btn) { btn.disabled = false; btn.textContent = '✓ Confirm Visit'; }
     return;
