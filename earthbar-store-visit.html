@@ -296,6 +296,36 @@ textarea{resize:vertical;min-height:70px;}
 }
 .exit-btn:hover{color:white;}
 
+/* GM NOTIFICATION CARDS */
+.notif-card{
+  background:white;border-radius:14px;padding:16px;margin-bottom:12px;
+  border-left:5px solid #FFB800;cursor:pointer;transition:box-shadow .15s;
+  display:flex;flex-direction:column;gap:4px;
+}
+.notif-card:hover{box-shadow:0 3px 12px rgba(0,0,0,.1);}
+.notif-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  background:#FFF8E1;color:#E65100;font-size:11px;font-weight:700;
+  padding:4px 10px;border-radius:20px;width:fit-content;margin-bottom:4px;
+}
+.notif-title{font-size:16px;font-weight:700;color:#141A12;}
+.notif-meta{font-size:13px;color:#888;}
+.notif-arrow{font-size:18px;color:#CCC;align-self:flex-end;margin-top:-30px;}
+
+/* GM CONFIRM SCREEN */
+.confirm-header-box{text-align:center;padding:28px 0 16px;}
+.confirm-header-icon{font-size:56px;margin-bottom:10px;display:block;}
+.confirm-header-title{font-size:22px;font-weight:800;color:#1B3A1E;margin-bottom:4px;}
+.confirm-header-sub{font-size:14px;color:#888;line-height:1.5;}
+.location-check-box{
+  background:#FFF8E1;border:2px solid #FFE082;border-radius:14px;
+  padding:16px;margin-top:16px;
+}
+.location-check-box.in-range{background:#E8F5E9;border-color:#A5D6A7;}
+.location-check-box.out-of-range{background:#FFEBEE;border-color:#EF9A9A;}
+.location-check-title{font-size:14px;font-weight:700;margin-bottom:4px;}
+.location-check-msg{font-size:13px;color:#666;line-height:1.5;}
+
 /* DETECTING state */
 .detecting-msg{
   text-align:center;font-size:14px;color:#888;margin-bottom:16px;
@@ -407,6 +437,12 @@ textarea{resize:vertical;min-height:70px;}
       </div>
     </div>
 
+    <!-- GM: pending confirmations -->
+    <div id="gm-notifications" style="display:none">
+      <div class="divider-label" style="margin-bottom:14px">🔔 Pending Confirmations</div>
+      <div id="gm-notification-list"></div>
+    </div>
+
     <button class="btn-logout" onclick="signOut()">Sign out</button>
 
     <!-- DEMO MODE: remove before production -->
@@ -466,6 +502,21 @@ textarea{resize:vertical;min-height:70px;}
   <div class="bottom-bar">
     <button class="btn btn-outline-gray" style="flex:0 0 auto;width:auto;padding:16px 18px;" onclick="window.print()">🖨️ Print</button>
     <button class="btn btn-green" onclick="newVisit(); initHome()">Start New Visit</button>
+  </div>
+</div>
+
+<!-- ===== GM CONFIRM ===== -->
+<div id="screen-gm-confirm" class="screen">
+  <div class="app-header">
+    <button class="back-btn" onclick="initHome()">←</button>
+    <div class="header-logo">
+      <svg width="110" height="41" aria-label="Earthbar"><use href="#eb-logo-sym" fill="white"/></svg>
+      <div class="subline">Confirm Visit</div>
+    </div>
+  </div>
+  <div class="content" id="gm-confirm-body"></div>
+  <div class="bottom-bar" id="gm-confirm-bar">
+    <button class="btn btn-green" id="gm-confirm-btn" onclick="doConfirmVisit()" disabled>📍 Checking location…</button>
   </div>
 </div>
 
@@ -581,6 +632,7 @@ const CATEGORIES = [
 // ─── STATE ───────────────────────────────────────────────────────────────────
 const S = {
   user: null,
+  profile: null,
   store: null,
   catIdx: 0,
   answers: {},
@@ -643,13 +695,17 @@ async function signOut() {
   showScreen('login');
 }
 
-function initHome() {
+async function initHome() {
   try {
     if (localStorage.getItem('eb_draft'))
       document.getElementById('draft-section').style.display = 'block';
   } catch(e){}
 
-  const firstName = S.user?.user_metadata?.full_name?.split(' ')[0]
+  // Fetch profile to know role
+  if (!S.profile) await fetchProfile();
+
+  const firstName = S.profile?.full_name?.split(' ')[0]
+    || S.user?.user_metadata?.full_name?.split(' ')[0]
     || S.user?.email?.split('@')[0]
     || '';
   document.getElementById('welcome-name').textContent =
@@ -667,7 +723,19 @@ function initHome() {
     sel.appendChild(opt);
   });
 
+  // Show GM notifications if applicable
+  if (S.profile?.role === 'gm') {
+    await loadGMNotifications();
+  } else {
+    document.getElementById('gm-notifications').style.display = 'none';
+  }
+
   showScreen('home');
+}
+
+async function fetchProfile() {
+  const { data } = await sb.from('profiles').select('*').eq('id', S.user.id).single();
+  if (data) S.profile = data;
 }
 
 function startDemoVisit() {
@@ -678,6 +746,154 @@ function startDemoVisit() {
   S.startLat = S.store.lat;
   S.startLng = S.store.lng;
   beginChecklist();
+}
+
+// ─── GM NOTIFICATIONS ────────────────────────────────────────────────────────
+async function loadGMNotifications() {
+  const { data: confs } = await sb.from('visit_confirmations')
+    .select('*')
+    .eq('gm_id', S.user.id)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+
+  const section = document.getElementById('gm-notifications');
+  const list    = document.getElementById('gm-notification-list');
+
+  if (!confs || confs.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+  list.innerHTML = confs.map(c => {
+    const dt = new Date(c.visit_submitted_at);
+    const dateStr = dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    const timeStr = dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    return `
+      <div class="notif-card" onclick="openGMConfirm('${c.id}')">
+        <div class="notif-badge">🔔 Confirmation Needed</div>
+        <div class="notif-title">${c.store_name}</div>
+        <div class="notif-meta">Visit by <strong>${c.dl_name}</strong></div>
+        <div class="notif-meta">${dateStr} at ${timeStr}</div>
+        <div class="notif-arrow">›</div>
+      </div>`;
+  }).join('');
+}
+
+let _activeConfirmId   = null;
+let _activeConfirmData = null;
+let _activeConfirmLat  = null;
+let _activeConfirmLng  = null;
+
+async function openGMConfirm(confirmId) {
+  const { data: conf, error } = await sb.from('visit_confirmations')
+    .select('*').eq('id', confirmId).single();
+  if (error || !conf) { toast('Could not load confirmation'); return; }
+
+  _activeConfirmId   = confirmId;
+  _activeConfirmData = conf;
+  _activeConfirmLat  = null;
+  _activeConfirmLng  = null;
+
+  const dt      = new Date(conf.visit_submitted_at);
+  const dateStr = dt.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const timeStr = dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+
+  document.getElementById('gm-confirm-body').innerHTML = `
+    <div class="confirm-header-box">
+      <span class="confirm-header-icon">📋</span>
+      <div class="confirm-header-title">Confirm In-Store Visit</div>
+      <div class="confirm-header-sub">from ${conf.dl_name}</div>
+    </div>
+    <div class="ts-box">
+      <div class="ts-row"><span class="ts-label">Visited by</span><span class="ts-value">${conf.dl_name}</span></div>
+      <div class="ts-row"><span class="ts-label">Store</span><span class="ts-value">${conf.store_name}</span></div>
+      <div class="ts-row"><span class="ts-label">Date</span><span class="ts-value">${dateStr}</span></div>
+      <div class="ts-row"><span class="ts-label">Time</span><span class="ts-value">${timeStr}</span></div>
+    </div>
+    <div class="location-check-box" id="gm-loc-box">
+      <div class="location-check-title">📍 Location Check</div>
+      <div class="location-check-msg" id="gm-loc-msg">Checking your location…</div>
+    </div>
+  `;
+
+  const btn = document.getElementById('gm-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = '📍 Checking location…';
+
+  document.getElementById('gm-confirm-bar').innerHTML = `
+    <button class="btn btn-green" id="gm-confirm-btn" onclick="doConfirmVisit()" disabled>📍 Checking location…</button>
+  `;
+
+  showScreen('gm-confirm');
+  _checkGMLocation();
+}
+
+function _checkGMLocation() {
+  if (!navigator.geolocation) {
+    _setGMLocMsg('Location unavailable on this device.', false);
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(pos => {
+    const storeId  = _activeConfirmData.store_id;
+    const storeKey = Object.entries(STORE_DB_IDS).find(([,v]) => v === storeId)?.[0];
+    const store    = STORES.find(s => s.id === storeKey);
+    if (!store) { _setGMLocMsg('Could not verify store location.', false); return; }
+
+    const ft = distFt(pos.coords.latitude, pos.coords.longitude, store.lat, store.lng);
+    if (ft <= 1000) {
+      _activeConfirmLat = pos.coords.latitude;
+      _activeConfirmLng = pos.coords.longitude;
+      _setGMLocMsg(`✓ You're within range (${Math.round(ft)} ft away).`, true);
+      const btn = document.getElementById('gm-confirm-btn');
+      if (btn) { btn.disabled = false; btn.textContent = '✓ Confirm Visit'; }
+    } else {
+      _setGMLocMsg(`You are ${Math.round(ft).toLocaleString()} ft away. You must be within 1,000 ft of ${_activeConfirmData.store_name} to confirm.`, false);
+      const btn = document.getElementById('gm-confirm-btn');
+      if (btn) { btn.disabled = true; btn.textContent = '📍 Must be in store'; }
+    }
+  }, () => _setGMLocMsg('Could not get your location. Please enable location access.', false),
+  { enableHighAccuracy: true, timeout: 12000 });
+}
+
+function _setGMLocMsg(msg, inRange) {
+  const box = document.getElementById('gm-loc-box');
+  const txt = document.getElementById('gm-loc-msg');
+  if (!box || !txt) return;
+  box.className = 'location-check-box' + (inRange === true ? ' in-range' : inRange === false ? ' out-of-range' : '');
+  txt.textContent = msg;
+}
+
+async function doConfirmVisit() {
+  const btn = document.getElementById('gm-confirm-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Confirming…'; }
+
+  const { error } = await sb.from('visit_confirmations').update({
+    status: 'confirmed',
+    confirmed_at: new Date().toISOString(),
+    confirmed_lat: _activeConfirmLat,
+    confirmed_lng: _activeConfirmLng
+  }).eq('id', _activeConfirmId);
+
+  if (error) {
+    toast('Error confirming — please try again');
+    if (btn) { btn.disabled = false; btn.textContent = '✓ Confirm Visit'; }
+    return;
+  }
+
+  document.getElementById('gm-confirm-body').innerHTML = `
+    <div style="text-align:center;padding:60px 0 20px">
+      <div style="font-size:72px;margin-bottom:16px">✅</div>
+      <div style="font-size:24px;font-weight:800;color:#1B3A1E;margin-bottom:10px">Visit Confirmed!</div>
+      <div style="font-size:15px;color:#666;line-height:1.6">
+        You confirmed the store visit from<br>
+        <strong>${_activeConfirmData.dl_name}</strong><br>at
+        <strong>${_activeConfirmData.store_name}</strong>.
+      </div>
+    </div>
+  `;
+  document.getElementById('gm-confirm-bar').innerHTML = `
+    <button class="btn btn-green" onclick="initHome()">← Back to Home</button>
+  `;
 }
 
 // ─── START VISIT (auto-detect store) ─────────────────────────────────────────
@@ -1243,6 +1459,22 @@ async function submitVisit() {
     if (respErr) console.error('Response save error:', respErr);
   }
 
+  // Create GM confirmation notification
+  const { data: storeData } = await sb.from('stores').select('gm_id').eq('id', storeDbId).single();
+  if (storeData?.gm_id) {
+    const dlName = S.profile?.full_name || S.user?.user_metadata?.full_name || S.user.email;
+    const { error: confErr } = await sb.from('visit_confirmations').insert({
+      submission_id: submissionId,
+      store_id: storeDbId,
+      gm_id: storeData.gm_id,
+      dl_id: S.user.id,
+      dl_name: dlName,
+      store_name: S.store.label,
+      visit_submitted_at: S.submitTime.toISOString()
+    });
+    if (confErr) console.error('GM notification error:', confErr);
+  }
+
   renderComplete();
   showScreen('complete');
 }
@@ -1261,7 +1493,7 @@ function renderComplete() {
     <div class="complete-box">
       <span class="complete-icon">🌿</span>
       <div class="complete-h">Visit Submitted</div>
-      <div class="complete-p">Report for <strong>${S.store.label}</strong> has been recorded.</div>
+      <div class="complete-p">Report for <strong>${S.store.label}</strong> has been recorded. The store GM has been notified to confirm.</div>
     </div>
     <div class="ts-box">
       <div class="ts-row"><span class="ts-label">Store</span><span class="ts-value">${S.store.label}</span></div>
@@ -1384,6 +1616,7 @@ function exitDiscard() {
 }
 
 function newVisit() {
+  // Keep S.user and S.profile — only reset visit-specific state
   Object.assign(S, {
     store:null, catIdx:0, answers:{}, itemNotes:{},
     catPhotos:{}, itemPhotos:{}, catNotes:{}, visitStart:null, submitTime:null,
