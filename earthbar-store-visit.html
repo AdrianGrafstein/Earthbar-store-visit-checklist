@@ -475,9 +475,10 @@ textarea{resize:vertical;min-height:70px;}
 <!-- ===== CATEGORY ===== -->
 <div id="screen-category" class="screen">
   <div class="app-header">
+    <button class="back-btn" id="cat-back-btn" onclick="goBackCat()" style="display:none">←</button>
     <div class="header-logo">
       <svg width="110" height="41" aria-label="Earthbar"><use href="#eb-logo-sym" fill="white"/></svg>
-      <div class="subline" id="cat-subline">Section 1 of 5</div>
+      <div class="subline" id="cat-subline">Section 1 of 10</div>
     </div>
     <button class="exit-btn" onclick="openExitModal()" title="Exit visit">✕</button>
   </div>
@@ -584,7 +585,7 @@ const STORES = [
 // ─── CHECKLIST DATA ──────────────────────────────────────────────────────────
 const CATEGORIES = [
   {
-    id:'connection', emoji:'🤝', title:'Connection',
+    id:'connection', emoji:'🤝', title:'Connection', noPhoto:true,
     desc:'Connect with the team before diving into the walkthrough.',
     items:[
       {id:'c1', q:'Connected with a team member and learned something new about them', type:'pf'},
@@ -609,7 +610,7 @@ const CATEGORIES = [
     ]
   },
   {
-    id:'pos', emoji:'💳', title:'POS',
+    id:'pos', emoji:'💳', title:'POS', noPhoto:true,
     desc:'Point of sale — where every transaction happens.',
     items:[
       {id:'p1', q:'POS system is functioning correctly',                        type:'pf'},
@@ -656,7 +657,7 @@ const CATEGORIES = [
     ]
   },
   {
-    id:'opscheck', emoji:'📝', title:'Operations Check',
+    id:'opscheck', emoji:'📝', title:'Operations Check', noPhoto:true,
     desc:'Documentation and accountability review with the GM or TM.',
     items:[
       {id:'oc1', q:'Redbook is complete and compliant',                        type:'pf'},
@@ -666,7 +667,7 @@ const CATEGORIES = [
   },
   // ── Weekly Focus (only one is active per visit, selected by the DL) ──
   {
-    id:'focus_team', focusKey:'team', emoji:'👥', title:'Weekly Focus — Team',
+    id:'focus_team', focusKey:'team', noPhoto:true, emoji:'👥', title:'Weekly Focus — Team',
     desc:'Review team health, development, and succession planning.',
     items:[
       {id:'ft1', q:'Reviewed "T" score on KPI Scorecard with GM',             type:'pf'},
@@ -675,7 +676,7 @@ const CATEGORIES = [
     ]
   },
   {
-    id:'focus_guest', focusKey:'guest', emoji:'🌟', title:'Weekly Focus — Guest',
+    id:'focus_guest', focusKey:'guest', noPhoto:true, emoji:'🌟', title:'Weekly Focus — Guest',
     desc:'Evaluate the guest experience and loyalty performance.',
     items:[
       {id:'fg1', q:'GREAT Guest Service audit completed',                              type:'pf'},
@@ -684,7 +685,7 @@ const CATEGORIES = [
     ]
   },
   {
-    id:'focus_financial', focusKey:'financial', emoji:'💰', title:'Weekly Focus — Financial',
+    id:'focus_financial', focusKey:'financial', noPhoto:true, emoji:'💰', title:'Weekly Focus — Financial',
     desc:'Review P&L, maintenance, and labor scheduling.',
     items:[
       {id:'ff1', q:'P&L recap reviewed with GM',                                       type:'pf'},
@@ -693,7 +694,7 @@ const CATEGORIES = [
     ]
   },
   {
-    id:'focus_store', focusKey:'store', emoji:'🏪', title:'Weekly Focus — Store',
+    id:'focus_store', focusKey:'store', noPhoto:true, emoji:'🏪', title:'Weekly Focus — Store',
     desc:'Operational compliance, audits, and deep cleaning.',
     items:[
       {id:'fs1', q:'OEA mock / prep audit completed',                  type:'pf'},
@@ -1147,6 +1148,10 @@ function renderCat(idx) {
   const bottomBar = document.querySelector('#screen-category .bottom-bar');
   if (bottomBar) bottomBar.style.display = '';
 
+  // Show back arrow on all sections except the first
+  const backBtn = document.getElementById('cat-back-btn');
+  if (backBtn) backBtn.style.display = idx === 0 ? 'none' : '';
+
   document.getElementById('cat-subline').textContent = `Section ${idx+1} of ${total}`;
   document.getElementById('cat-progress').style.width = pct + '%';
 
@@ -1380,8 +1385,8 @@ function completeCategory() {
     return;
   }
 
-  // Require at least one photo per section (skipped in demo mode)
-  if (!S.demoMode && !S.catPhotos[cat.id]) {
+  // Require at least one photo per section (skipped in demo mode and for no-photo sections)
+  if (!S.demoMode && !cat.noPhoto && !S.catPhotos[cat.id]) {
     toast('A photo is required for this section');
     const pz = document.getElementById('pz-'+cat.id);
     if (pz) pz.scrollIntoView({behavior:'smooth', block:'center'});
@@ -1412,9 +1417,15 @@ function completeCategory() {
 }
 
 function showFocusPicker() {
-  // Hide the bottom bar — user must pick a focus before continuing
+  S.catIdx = 9; // so back button returns to opscheck (renderCat(8))
+
+  // Hide the bottom bar — user must pick a focus card instead
   const bottomBar = document.querySelector('#screen-category .bottom-bar');
   if (bottomBar) bottomBar.style.display = 'none';
+
+  // Show back arrow (we're past section 1)
+  const backBtn = document.getElementById('cat-back-btn');
+  if (backBtn) backBtn.style.display = '';
 
   document.getElementById('cat-subline').textContent = 'Section 10 of 10';
   document.getElementById('cat-progress').style.width = '100%';
@@ -1454,7 +1465,11 @@ function showFocusPicker() {
 function pickWeeklyFocus(key) {
   S.weeklyFocus = key;
   saveDraft();
-  renderCat(S.catIdx + 1); // S.catIdx is still at opscheck; +1 is the focus section
+  renderCat(9); // focus section is always index 9 in activeCategories()
+}
+
+function goBackCat() {
+  if (S.catIdx > 0) renderCat(S.catIdx - 1);
 }
 
 function backFromSummary() {
