@@ -1778,7 +1778,7 @@ function renderComplete() {
       </div>
     </div>
     <div class="field-label" style="margin-bottom:10px">Category Breakdown</div>
-    ${CATEGORIES.map(cat => {
+    ${activeCategories().map(cat => {
       const cs = catScores[cat.id];
       const g2 = grade(cs.pct);
       return `<div class="cat-result-row">
