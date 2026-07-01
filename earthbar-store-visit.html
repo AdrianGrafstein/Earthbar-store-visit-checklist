@@ -1647,81 +1647,103 @@ const ITEM_DB_IDS = {
 
 // ─── SUBMIT ──────────────────────────────────────────────────────────────────
 async function submitVisit() {
-  S.submitTime = new Date();
-  stopLocationPings();
-  try { localStorage.removeItem('eb_draft'); } catch(e){}
+  const submitBtn = document.querySelector('#screen-summary .btn-green');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Submitting…'; }
 
-  const {score} = calcScore();
-  const storeDbId = STORE_DB_IDS[S.store.id];
+  try {
+    S.submitTime = new Date();
+    stopLocationPings();
+    try { localStorage.removeItem('eb_draft'); } catch(e){}
 
-  // Insert form_submission
-  const { data: sub, error: subErr } = await sb.from('form_submissions').insert({
-    store_id: storeDbId,
-    district_leader_id: S.user.id,
-    status: 'submitted',
-    start_lat: S.startLat ?? null,
-    start_lng: S.startLng ?? null,
-    started_at: S.visitStart?.toISOString(),
-    submitted_at: S.submitTime.toISOString(),
-    overall_grade: score,
-    flagged: false,
-    draft_data: { answers: S.answers, itemNotes: S.itemNotes, catNotes: S.catNotes }
-  }).select('id').single();
+    if (!S.user?.id) throw new Error('Not signed in — please reload and sign in again');
+    if (!S.store?.id) throw new Error('No store selected');
 
-  if (subErr) {
-    console.error('Submission error:', subErr);
-    toast('Error saving submission — please try again');
-    return;
-  }
+    const {score} = calcScore();
+    const storeDbId = STORE_DB_IDS[S.store.id];
+    if (!storeDbId) throw new Error('Store not found in database: ' + S.store.id);
 
-  const submissionId = sub.id;
-  S.submissionId = submissionId;
+    // Check if any weekly focus item failed (triggers flag alert regardless of overall score)
+    const FOCUS_CAT_IDS = ['focus_team','focus_guest','focus_financial','focus_store'];
+    const focusItemFailed = activeCategories()
+      .filter(c => FOCUS_CAT_IDS.includes(c.id))
+      .some(c => c.items.some(item => {
+        const ans = S.answers[c.id + '-' + item.id];
+        return ans === 'fail' || ans === 'no';
+      }));
 
-  // Build form_responses rows
-  const responses = [];
-  for (const cat of activeCategories()) {
-    const catDbId = CAT_DB_IDS[cat.id];
-    for (const item of cat.items) {
-      const key = cat.id + '-' + item.id;
-      const ans = S.answers[key];
-      if (ans === undefined) continue;
-      let passed = null;
-      if (ans === 'pass' || ans === 'yes') passed = true;
-      else if (ans === 'fail' || ans === 'no') passed = false;
-      // ratings: passed stays null
-      responses.push({
-        submission_id: submissionId,
-        item_id: ITEM_DB_IDS[item.id],
-        category_id: catDbId,
-        passed,
-        note: S.itemNotes[key] || null,
-      });
-    }
-  }
-
-  if (responses.length > 0) {
-    const { error: respErr } = await sb.from('form_responses').insert(responses);
-    if (respErr) console.error('Response save error:', respErr);
-  }
-
-  // Create GM confirmation notification
-  const { data: storeData } = await sb.from('stores').select('gm_id').eq('id', storeDbId).single();
-  if (storeData?.gm_id) {
-    const dlName = S.profile?.full_name || S.user?.user_metadata?.full_name || S.user.email;
-    const { error: confErr } = await sb.from('visit_confirmations').insert({
-      submission_id: submissionId,
+    // Insert form_submission
+    const { data: sub, error: subErr } = await sb.from('form_submissions').insert({
       store_id: storeDbId,
-      gm_id: storeData.gm_id,
-      dl_id: S.user.id,
-      dl_name: dlName,
-      store_name: S.store.label,
-      visit_submitted_at: S.submitTime.toISOString()
-    });
-    if (confErr) console.error('GM notification error:', confErr);
-  }
+      district_leader_id: S.user.id,
+      status: 'submitted',
+      start_lat: S.startLat ?? null,
+      start_lng: S.startLng ?? null,
+      started_at: S.visitStart?.toISOString(),
+      submitted_at: S.submitTime.toISOString(),
+      overall_grade: score,
+      flagged: false,
+      draft_data: { answers: S.answers, itemNotes: S.itemNotes, catNotes: S.catNotes, focusItemFailed }
+    }).select('id').single();
 
-  renderComplete();
-  showScreen('complete');
+    if (subErr) {
+      console.error('Submission error:', subErr);
+      throw new Error(subErr.message || 'Error saving submission');
+    }
+
+    const submissionId = sub.id;
+    S.submissionId = submissionId;
+
+    // Build form_responses rows
+    const responses = [];
+    for (const cat of activeCategories()) {
+      const catDbId = CAT_DB_IDS[cat.id];
+      for (const item of cat.items) {
+        const key = cat.id + '-' + item.id;
+        const ans = S.answers[key];
+        if (ans === undefined) continue;
+        let passed = null;
+        if (ans === 'pass' || ans === 'yes') passed = true;
+        else if (ans === 'fail' || ans === 'no') passed = false;
+        // ratings: passed stays null
+        responses.push({
+          submission_id: submissionId,
+          item_id: ITEM_DB_IDS[item.id],
+          category_id: catDbId,
+          passed,
+          note: S.itemNotes[key] || null,
+        });
+      }
+    }
+
+    if (responses.length > 0) {
+      const { error: respErr } = await sb.from('form_responses').insert(responses);
+      if (respErr) console.error('Response save error:', respErr);
+    }
+
+    // Create GM confirmation notification
+    const { data: storeData } = await sb.from('stores').select('gm_id').eq('id', storeDbId).single();
+    if (storeData?.gm_id) {
+      const dlName = S.profile?.full_name || S.user?.user_metadata?.full_name || S.user.email;
+      const { error: confErr } = await sb.from('visit_confirmations').insert({
+        submission_id: submissionId,
+        store_id: storeDbId,
+        gm_id: storeData.gm_id,
+        dl_id: S.user.id,
+        dl_name: dlName,
+        store_name: S.store.label,
+        visit_submitted_at: S.submitTime.toISOString()
+      });
+      if (confErr) console.error('GM notification error:', confErr);
+    }
+
+    renderComplete();
+    showScreen('complete');
+
+  } catch(err) {
+    console.error('submitVisit error:', err);
+    toast('Submit failed: ' + (err.message || String(err)));
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit & Sign Off ✓'; }
+  }
 }
 
 // ─── COMPLETE ────────────────────────────────────────────────────────────────
