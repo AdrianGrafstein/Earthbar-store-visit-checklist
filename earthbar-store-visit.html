@@ -343,6 +343,21 @@ textarea{resize:vertical;min-height:70px;}
   .content{padding:16px 16px 110px;}
   .cat-title{font-size:22px;}
 }
+/* WEEKLY FOCUS PICKER */
+.focus-pick-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;
+}
+.focus-pick-card{
+  background:white;border:2px solid #E5E5E5;border-radius:14px;
+  padding:20px 12px;cursor:pointer;text-align:center;
+  font-family:inherit;transition:border-color .2s,transform .1s,box-shadow .15s;
+}
+.focus-pick-card:hover{
+  border-color:#1B3A1E;box-shadow:0 3px 12px rgba(0,0,0,.1);transform:scale(1.02);
+}
+.focus-pick-emoji{font-size:32px;margin-bottom:6px;}
+.focus-pick-label{font-weight:700;font-size:15px;color:#141A12;}
+.focus-pick-desc{font-size:12px;color:#888;margin-top:4px;line-height:1.4;}
 </style>
 </head>
 <body>
@@ -569,71 +584,135 @@ const STORES = [
 // ─── CHECKLIST DATA ──────────────────────────────────────────────────────────
 const CATEGORIES = [
   {
-    id:'kitchen', emoji:'🍃', title:'Kitchen & Food Safety',
-    desc:'Check food handling, storage temperatures, and kitchen hygiene.',
+    id:'connection', emoji:'🤝', title:'Connection',
+    desc:'Connect with the team before diving into the walkthrough.',
     items:[
-      {id:'k1', q:'All food items are within their expiration date',                    type:'pf'},
-      {id:'k2', q:'Food stored at proper temperatures (cold ≤41°F / hot ≥140°F)',      type:'pf', critical:true},
-      {id:'k3', q:'Food prep surfaces are clean and sanitized',                         type:'pf'},
-      {id:'k4', q:'Blenders and equipment are cleaned between uses',                    type:'pf'},
-      {id:'k5', q:'Hand washing station is stocked and accessible',                     type:'pf'},
-      {id:'k6', q:'Staff are following proper food handling protocols (gloves, etc.)',  type:'yn'},
-      {id:'k7', q:'Rate overall kitchen cleanliness',                                   type:'rating'},
+      {id:'c1', q:'Connected with a team member and learned something new about them', type:'pf'},
+      {id:'c2', q:'Discussed Thoughtful Tuesday / Thursday Pulse / CEO Message',       type:'pf'},
     ]
   },
   {
-    id:'front', emoji:'✨', title:'Front of House & Cleanliness',
-    desc:'Assess the customer-facing environment and overall presentation.',
+    id:'curbside', emoji:'🚪', title:'Curbside',
+    desc:'First impression — what a customer sees before they walk in.',
     items:[
-      {id:'f1', q:'Service counter and bar area are clean and organized',       type:'pf'},
-      {id:'f2', q:'Floors are clean and free of debris or spills',              type:'pf'},
-      {id:'f3', q:'Trash receptacles are not overflowing',                      type:'pf'},
-      {id:'f4', q:'Windows and glass surfaces are clean and smear-free',        type:'pf'},
-      {id:'f5', q:'Restrooms are clean and fully stocked (if applicable)',      type:'pf', allowNA:true},
-      {id:'f6', q:'Rate overall front of house appearance and vibe',            type:'rating'},
+      {id:'cs1', q:'Exterior is clean (no trash or debris)',         type:'pf'},
+      {id:'cs2', q:'Signage is visible and in good condition',       type:'pf'},
+      {id:'cs3', q:'Hours are posted and accurate',                  type:'pf'},
     ]
   },
   {
-    id:'merch', emoji:'🛍️', title:'Merchandising & Signage',
-    desc:'Review product presentation, pricing accuracy, and promotional material.',
+    id:'lobby', emoji:'🏠', title:'Lobby',
+    desc:'First thing a customer sees inside the store.',
     items:[
-      {id:'m1', q:'Supplement shelves are fully stocked and properly faced',    type:'pf'},
-      {id:'m2', q:'All products are correctly priced and labeled',              type:'pf'},
-      {id:'m3', q:'Promotional and seasonal signage is current and accurate',   type:'pf'},
-      {id:'m4', q:'No expired products visible on retail shelves',              type:'pf'},
-      {id:'m5', q:'Rate overall merchandising quality and visual appeal',       type:'rating'},
+      {id:'l1', q:'Lobby is clean and organized',                    type:'pf'},
+      {id:'l2', q:'POP / marketing materials are current',           type:'pf'},
     ]
   },
   {
-    id:'staff', emoji:'🌟', title:'Staffing & Customer Experience',
-    desc:'Evaluate team performance, customer interactions, and store energy.',
+    id:'pos', emoji:'💳', title:'POS',
+    desc:'Point of sale — where every transaction happens.',
     items:[
-      {id:'s1', q:'Staffing level is adequate for current customer volume',     type:'yn'},
-      {id:'s2', q:'All staff are in proper uniform or dress code',              type:'pf'},
-      {id:'s3', q:'Staff are actively greeting and engaging customers',         type:'yn'},
-      {id:'s4', q:'Menu boards are accurate and up to date',                    type:'pf'},
-      {id:'s5', q:'Wait times are acceptable for current volume',               type:'yn'},
-      {id:'s6', q:'Rate the overall customer experience and store energy',      type:'rating'},
+      {id:'p1', q:'POS system is functioning correctly',                        type:'pf'},
+      {id:'p2', q:'Pricing displayed is accurate',                              type:'pf'},
+      {id:'p3', q:'Loyalty program prompts are working at checkout',            type:'pf'},
     ]
   },
   {
-    id:'equipment', emoji:'⚙️', title:'Equipment & Operations',
-    desc:'Inspect equipment functionality and operational compliance.',
+    id:'bar', emoji:'🥤', title:'Bar',
+    desc:'Where the product is made — highest-risk area for quality and food safety.',
     items:[
-      {id:'e1', q:'All blenders and prep equipment are functioning properly',   type:'pf'},
-      {id:'e2', q:'POS system is fully operational',                            type:'pf'},
-      {id:'e3', q:'Refrigeration and cold storage are at proper temperature',   type:'pf', critical:true},
-      {id:'e4', q:'Ice machine is stocked and operational',                     type:'pf'},
-      {id:'e5', q:'Opening / closing compliance checklist is current',          type:'pf'},
-      {id:'e6', q:'Any equipment in immediate need of repair or attention?',    type:'yn', invert:true},
+      {id:'b1', q:'Equipment is clean (blenders, surfaces)',                    type:'pf'},
+      {id:'b2', q:'Build guides are posted and visible',                        type:'pf'},
+      {id:'b3', q:'Proper food handling observed (gloves, hygiene)',            type:'pf', critical:true},
+      {id:'b4', q:'Temperature logs are current',                               type:'pf'},
+      {id:'b5', q:'Ingredients are stocked and properly stored',                type:'pf'},
     ]
-  }
+  },
+  {
+    id:'handoff', emoji:'🛎️', title:'Handoff',
+    desc:'Last touchpoint before the customer gets their order.',
+    items:[
+      {id:'h1', q:'Handoff area is clean and organized',             type:'pf'},
+      {id:'h2', q:'Orders are being called correctly',               type:'pf'},
+      {id:'h3', q:'Wait times are acceptable',                       type:'pf'},
+    ]
+  },
+  {
+    id:'boh', emoji:'📋', title:'BOH / Comm Board',
+    desc:'Back of house and the communication board the team relies on.',
+    items:[
+      {id:'boh1', q:'Comm board is updated with current week\'s information',  type:'pf'},
+      {id:'boh2', q:'Walk-in cooler is organized',                             type:'pf'},
+      {id:'boh3', q:'Cleaning schedule is posted and being followed',          type:'pf'},
+    ]
+  },
+  {
+    id:'retail', emoji:'🛍️', title:'Retail Planogram',
+    desc:'Retail shelves — compliance, facing, and pricing.',
+    items:[
+      {id:'r1', q:'Planogram compliance — shelves match the diagram',                  type:'pf'},
+      {id:'r2', q:'Product facing is correct (labels out, shelves pulled forward)',    type:'pf'},
+      {id:'r3', q:'Pricing is accurate on all retail items',                           type:'pf'},
+    ]
+  },
+  {
+    id:'opscheck', emoji:'📝', title:'Operations Check',
+    desc:'Documentation and accountability review with the GM or TM.',
+    items:[
+      {id:'oc1', q:'Redbook is complete and compliant',                        type:'pf'},
+      {id:'oc2', q:'Integrity review completed with GM / TM',                  type:'pf'},
+      {id:'oc3', q:'Previous visit action items have been reviewed',           type:'pf'},
+    ]
+  },
+  // ── Weekly Focus (only one is active per visit, selected by the DL) ──
+  {
+    id:'focus_team', focusKey:'team', emoji:'👥', title:'Weekly Focus — Team',
+    desc:'Review team health, development, and succession planning.',
+    items:[
+      {id:'ft1', q:'Reviewed "T" score on KPI Scorecard with GM',             type:'pf'},
+      {id:'ft2', q:'Reviewed calling card / IDP progress with GM or TM',      type:'pf'},
+      {id:'ft3', q:'Succession planning and scheduling discussed',             type:'pf'},
+    ]
+  },
+  {
+    id:'focus_guest', focusKey:'guest', emoji:'🌟', title:'Weekly Focus — Guest',
+    desc:'Evaluate the guest experience and loyalty performance.',
+    items:[
+      {id:'fg1', q:'GREAT Guest Service audit completed',                              type:'pf'},
+      {id:'fg2', q:'Reviewed marketing scorecard (service metrics, loyalty capture)',  type:'pf'},
+      {id:'fg3', q:'Build guide compliance confirmed at the bar',                      type:'pf'},
+    ]
+  },
+  {
+    id:'focus_financial', focusKey:'financial', emoji:'💰', title:'Weekly Focus — Financial',
+    desc:'Review P&L, maintenance, and labor scheduling.',
+    items:[
+      {id:'ff1', q:'P&L recap reviewed with GM',                                       type:'pf'},
+      {id:'ff2', q:'Repair and maintenance tickets are submitted and up to date',      type:'pf'},
+      {id:'ff3', q:'Scheduling reviewed for the next 3 weeks',                         type:'pf'},
+    ]
+  },
+  {
+    id:'focus_store', focusKey:'store', emoji:'🏪', title:'Weekly Focus — Store',
+    desc:'Operational compliance, audits, and deep cleaning.',
+    items:[
+      {id:'fs1', q:'OEA mock / prep audit completed',                  type:'pf'},
+      {id:'fs2', q:'Food handlers, POP, and planograms checked',       type:'pf'},
+      {id:'fs3', q:'Deep cleaning schedule reviewed and on track',     type:'pf'},
+    ]
+  },
 ];
+
+function activeCategories() {
+  if (!S.weeklyFocus) return CATEGORIES.filter(c => !c.focusKey);
+  return CATEGORIES.filter(c => !c.focusKey || c.focusKey === S.weeklyFocus);
+}
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
 const S = {
   user: null,
   profile: null,
+  weeklyFocus: null,
   store: null,
   catIdx: 0,
   answers: {},
@@ -1058,16 +1137,22 @@ function beginChecklist() {
 
 function renderCat(idx) {
   S.catIdx = idx;
-  const cat = CATEGORIES[idx];
-  const pct = ((idx+1)/CATEGORIES.length*100).toFixed(0);
+  const cats = activeCategories();
+  const cat = cats[idx];
+  const total = cats.length;
+  const pct = ((idx+1)/total*100).toFixed(0);
   const hasPhoto = !!S.catPhotos[cat.id];
 
-  document.getElementById('cat-subline').textContent = `Section ${idx+1} of ${CATEGORIES.length}`;
+  // Restore bottom bar in case focus picker hid it
+  const bottomBar = document.querySelector('#screen-category .bottom-bar');
+  if (bottomBar) bottomBar.style.display = '';
+
+  document.getElementById('cat-subline').textContent = `Section ${idx+1} of ${total}`;
   document.getElementById('cat-progress').style.width = pct + '%';
 
   let html = `
     <div class="cat-header">
-      <div class="cat-num">Section ${idx+1} of ${CATEGORIES.length}</div>
+      <div class="cat-num">Section ${idx+1} of ${total}</div>
       <span class="cat-emoji">${cat.emoji}</span>
       <div class="cat-title">${cat.title}</div>
       <div class="cat-desc">${cat.desc}</div>
@@ -1279,7 +1364,8 @@ function removeItemPhoto(e, key) {
 
 // ─── CATEGORY COMPLETION ─────────────────────────────────────────────────────
 function completeCategory() {
-  const cat = CATEGORIES[S.catIdx];
+  const cats = activeCategories();
+  const cat = cats[S.catIdx];
 
   // Check all pass/fail and yes/no items are answered
   const missing = cat.items.filter(item => {
@@ -1313,8 +1399,11 @@ function completeCategory() {
   window.scrollTo({top:0, behavior:'smooth'});
 
   setTimeout(() => {
-    if (S.catIdx < CATEGORIES.length-1) {
-      renderCat(S.catIdx+1);
+    // After opscheck, show the weekly focus picker if not yet chosen
+    if (cat.id === 'opscheck' && !S.weeklyFocus) {
+      showFocusPicker();
+    } else if (S.catIdx < cats.length - 1) {
+      renderCat(S.catIdx + 1);
     } else {
       renderSummary();
       showScreen('summary');
@@ -1322,8 +1411,54 @@ function completeCategory() {
   }, 1300);
 }
 
+function showFocusPicker() {
+  // Hide the bottom bar — user must pick a focus before continuing
+  const bottomBar = document.querySelector('#screen-category .bottom-bar');
+  if (bottomBar) bottomBar.style.display = 'none';
+
+  document.getElementById('cat-subline').textContent = 'Section 10 of 10';
+  document.getElementById('cat-progress').style.width = '100%';
+
+  document.getElementById('cat-body').innerHTML = `
+    <div class="cat-header">
+      <div class="cat-num">Section 10 of 10</div>
+      <span class="cat-emoji">🎯</span>
+      <div class="cat-title">Weekly Focus</div>
+      <div class="cat-desc">Select this week's focus area to complete the visit.</div>
+    </div>
+    <div class="focus-pick-grid">
+      <button class="focus-pick-card" onclick="pickWeeklyFocus('team')">
+        <div class="focus-pick-emoji">👥</div>
+        <div class="focus-pick-label">Team</div>
+        <div class="focus-pick-desc">KPI scorecard, IDP, succession</div>
+      </button>
+      <button class="focus-pick-card" onclick="pickWeeklyFocus('guest')">
+        <div class="focus-pick-emoji">🌟</div>
+        <div class="focus-pick-label">Guest</div>
+        <div class="focus-pick-desc">Service audit, loyalty, build guides</div>
+      </button>
+      <button class="focus-pick-card" onclick="pickWeeklyFocus('financial')">
+        <div class="focus-pick-emoji">💰</div>
+        <div class="focus-pick-label">Financial</div>
+        <div class="focus-pick-desc">P&amp;L recap, R&amp;M, scheduling</div>
+      </button>
+      <button class="focus-pick-card" onclick="pickWeeklyFocus('store')">
+        <div class="focus-pick-emoji">🏪</div>
+        <div class="focus-pick-label">Store</div>
+        <div class="focus-pick-desc">OEA audit, compliance, deep clean</div>
+      </button>
+    </div>
+  `;
+}
+
+function pickWeeklyFocus(key) {
+  S.weeklyFocus = key;
+  saveDraft();
+  renderCat(S.catIdx + 1); // S.catIdx is still at opscheck; +1 is the focus section
+}
+
 function backFromSummary() {
-  renderCat(CATEGORIES.length-1);
+  renderCat(activeCategories().length-1);
   showScreen('category');
 }
 
@@ -1331,7 +1466,7 @@ function backFromSummary() {
 function calcScore() {
   let total=0, passed=0;
   const catScores={}, flags=[];
-  CATEGORIES.forEach(cat => {
+  activeCategories().forEach(cat => {
     let ct=0, cp=0;
     cat.items.forEach(item => {
       if (item.type==='rating') return;
@@ -1369,7 +1504,7 @@ function renderSummary() {
     <div class="field-label" style="margin-bottom:10px">Category Scores</div>
   `;
 
-  CATEGORIES.forEach(cat => {
+  activeCategories().forEach(cat => {
     const cs = catScores[cat.id];
     const g2 = grade(cs.pct);
     html += `
@@ -1387,7 +1522,7 @@ function renderSummary() {
   }
 
   const ratings = [];
-  CATEGORIES.forEach(cat => cat.items.filter(i=>i.type==='rating').forEach(item => {
+  activeCategories().forEach(cat => cat.items.filter(i=>i.type==='rating').forEach(item => {
     const v = S.answers[cat.id+'-'+item.id];
     if (v) ratings.push({cat:cat.title, q:item.q, v});
   }));
@@ -1439,26 +1574,59 @@ const STORE_DB_IDS = {
   'beam-wpb':'8e8b0f1a-efd3-5cff-8675-560831d0577a'
 };
 const CAT_DB_IDS = {
-  'kitchen':'ff99f410-aa84-5b54-b08b-630f48aa5416','front':'fe11d7cc-cda7-58bb-859f-cbc7745c0fa1',
-  'merch':'6ea2f054-a83a-5e8d-b31c-1ba9f22eab31','staff':'8ed8b6fc-9a18-55c6-9ab4-e44b8590b39b',
-  'equipment':'035fb24b-58c9-5b04-843b-889b60d03795'
+  'connection':      '00000001-0000-0000-0000-000000000001',
+  'curbside':        '00000001-0000-0000-0000-000000000002',
+  'lobby':           '00000001-0000-0000-0000-000000000003',
+  'pos':             '00000001-0000-0000-0000-000000000004',
+  'bar':             '00000001-0000-0000-0000-000000000005',
+  'handoff':         '00000001-0000-0000-0000-000000000006',
+  'boh':             '00000001-0000-0000-0000-000000000007',
+  'retail':          '00000001-0000-0000-0000-000000000008',
+  'opscheck':        '00000001-0000-0000-0000-000000000009',
+  'focus_team':      '00000001-0000-0000-0000-000000000010',
+  'focus_guest':     '00000001-0000-0000-0000-000000000011',
+  'focus_financial': '00000001-0000-0000-0000-000000000012',
+  'focus_store':     '00000001-0000-0000-0000-000000000013',
 };
 const ITEM_DB_IDS = {
-  'k1':'648c92ed-15e3-5429-8f58-6f9482513612','k2':'eeffd9c9-c7b6-5bcc-a9d4-fe4ec5e2c408',
-  'k3':'f993f46a-21fe-57d3-a665-7456f949beb4','k4':'01d63b7d-c3e0-5c69-8a8c-573614faf92c',
-  'k5':'0e66dcf3-ebbd-5b28-bebd-a837e1d69aa8','k6':'6768e9bf-9229-534c-9bfd-d645719b655a',
-  'k7':'ce242b0f-579a-5599-b771-fe023ca6334e','f1':'2de7d222-3412-5784-a105-863a13ec3ec5',
-  'f2':'f042e16d-9dd2-53b7-98ab-9dcc8fa24ef1','f3':'eeb5a9b0-b184-525c-9c95-3e6177bc0b90',
-  'f4':'49c17f23-3fdb-5c91-84b8-d86c2bb1e923','f5':'18e019df-1667-56d3-8d77-97bc9f44b4a8',
-  'f6':'8b1b4e19-f4a1-5c64-afe0-c05625e4de42','m1':'894f03b3-38df-52d9-8eb4-5bb0e3b60a9a',
-  'm2':'c2573651-fae7-515c-9fd8-674d309d5f05','m3':'c60ec07c-ac76-529b-97ba-d23ffaa51fbc',
-  'm4':'776abbcd-4b1a-5ac9-a32e-30d58c378602','m5':'92e2b151-c8dc-59c1-9fcd-88c496f2a62b',
-  's1':'60a63814-83b0-5041-9920-41b686892ac3','s2':'94145ffa-604b-5efb-9dc1-883cad451383',
-  's3':'1888f291-7b93-5987-9759-01bf2da6b37f','s4':'b0110001-b108-5e89-99bd-9d14e02002f4',
-  's5':'a50811ad-b346-5c45-a21f-2341c312827e','s6':'614639aa-b65a-5b66-8cd4-989a6592ffe2',
-  'e1':'23c3c9fb-23e6-59d7-b317-dd614478e685','e2':'adc3b4aa-ffe7-5cd2-b2e9-6bc06eceb2e2',
-  'e3':'cd931a12-7697-588b-a6c4-603d2589f7aa','e4':'ee3a5589-54fc-50f2-a9b0-60056cf59478',
-  'e5':'7862fe14-5a13-5df2-96e9-1d0f55eb671a','e6':'f04864d6-cad9-5161-89d4-ede7a25d1efa'
+  // Connection
+  'c1':'00000002-0000-0000-0000-000000000001','c2':'00000002-0000-0000-0000-000000000002',
+  // Curbside
+  'cs1':'00000002-0000-0000-0000-000000000003','cs2':'00000002-0000-0000-0000-000000000004',
+  'cs3':'00000002-0000-0000-0000-000000000005',
+  // Lobby
+  'l1':'00000002-0000-0000-0000-000000000006','l2':'00000002-0000-0000-0000-000000000007',
+  // POS
+  'p1':'00000002-0000-0000-0000-000000000008','p2':'00000002-0000-0000-0000-000000000009',
+  'p3':'00000002-0000-0000-0000-000000000010',
+  // Bar
+  'b1':'00000002-0000-0000-0000-000000000011','b2':'00000002-0000-0000-0000-000000000012',
+  'b3':'00000002-0000-0000-0000-000000000013','b4':'00000002-0000-0000-0000-000000000014',
+  'b5':'00000002-0000-0000-0000-000000000015',
+  // Handoff
+  'h1':'00000002-0000-0000-0000-000000000016','h2':'00000002-0000-0000-0000-000000000017',
+  'h3':'00000002-0000-0000-0000-000000000018',
+  // BOH
+  'boh1':'00000002-0000-0000-0000-000000000019','boh2':'00000002-0000-0000-0000-000000000020',
+  'boh3':'00000002-0000-0000-0000-000000000021',
+  // Retail
+  'r1':'00000002-0000-0000-0000-000000000022','r2':'00000002-0000-0000-0000-000000000023',
+  'r3':'00000002-0000-0000-0000-000000000024',
+  // Ops Check
+  'oc1':'00000002-0000-0000-0000-000000000025','oc2':'00000002-0000-0000-0000-000000000026',
+  'oc3':'00000002-0000-0000-0000-000000000027',
+  // Focus: Team
+  'ft1':'00000002-0000-0000-0000-000000000028','ft2':'00000002-0000-0000-0000-000000000029',
+  'ft3':'00000002-0000-0000-0000-000000000030',
+  // Focus: Guest
+  'fg1':'00000002-0000-0000-0000-000000000031','fg2':'00000002-0000-0000-0000-000000000032',
+  'fg3':'00000002-0000-0000-0000-000000000033',
+  // Focus: Financial
+  'ff1':'00000002-0000-0000-0000-000000000034','ff2':'00000002-0000-0000-0000-000000000035',
+  'ff3':'00000002-0000-0000-0000-000000000036',
+  // Focus: Store
+  'fs1':'00000002-0000-0000-0000-000000000037','fs2':'00000002-0000-0000-0000-000000000038',
+  'fs3':'00000002-0000-0000-0000-000000000039',
 };
 
 // ─── SUBMIT ──────────────────────────────────────────────────────────────────
@@ -1495,7 +1663,7 @@ async function submitVisit() {
 
   // Build form_responses rows
   const responses = [];
-  for (const cat of CATEGORIES) {
+  for (const cat of activeCategories()) {
     const catDbId = CAT_DB_IDS[cat.id];
     for (const item of cat.items) {
       const key = cat.id + '-' + item.id;
@@ -1595,7 +1763,7 @@ function renderComplete() {
 function saveDraft() {
   try {
     const d = {
-      store:S.store, catIdx:S.catIdx, answers:S.answers,
+      store:S.store, weeklyFocus:S.weeklyFocus, catIdx:S.catIdx, answers:S.answers,
       itemNotes:S.itemNotes, catNotes:S.catNotes,
       visitStart:S.visitStart?.toISOString(),
     };
@@ -1615,12 +1783,13 @@ function resumeDraft() {
       toast('Old draft cleared — please start a new visit');
       return;
     }
-    S.store     = d.store;
-    S.catIdx    = d.catIdx||0;
-    S.answers   = d.answers||{};
-    S.itemNotes = d.itemNotes||{};
-    S.catNotes  = d.catNotes||{};
-    S.visitStart = d.visitStart ? new Date(d.visitStart) : new Date();
+    S.store       = d.store;
+    S.weeklyFocus = d.weeklyFocus || null;
+    S.catIdx      = d.catIdx||0;
+    S.answers     = d.answers||{};
+    S.itemNotes   = d.itemNotes||{};
+    S.catNotes    = d.catNotes||{};
+    S.visitStart  = d.visitStart ? new Date(d.visitStart) : new Date();
     startLocationPings();
     renderCat(S.catIdx);
     showScreen('category');
@@ -1679,7 +1848,7 @@ function exitDiscard() {
 function newVisit() {
   // Keep S.user and S.profile — only reset visit-specific state
   Object.assign(S, {
-    store:null, catIdx:0, answers:{}, itemNotes:{},
+    weeklyFocus:null, store:null, catIdx:0, answers:{}, itemNotes:{},
     catPhotos:{}, itemPhotos:{}, catNotes:{}, visitStart:null, submitTime:null,
     submissionId:null, demoMode:false,
   });
