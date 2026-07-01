@@ -1180,6 +1180,7 @@ function renderCat(idx) {
            <div class="photo-zone-lbl">Tap to add a section photo</div>`}
     </div>`;
 
+  html += `
     <div class="divider-label">Section Notes</div>
     <textarea class="section-note-field" placeholder="General observations for this section (optional)…"
       oninput="S.catNotes['${cat.id}']=this.value; saveDraft()"
