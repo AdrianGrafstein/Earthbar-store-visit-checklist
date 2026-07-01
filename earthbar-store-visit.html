@@ -1166,7 +1166,7 @@ function renderCat(idx) {
 
   cat.items.forEach(item => { html += buildItemCard(cat.id, item); });
 
-  html += `
+  html += cat.noPhoto ? '' : `
     <div class="divider-label">Section Photo</div>
     <div class="photo-zone${hasPhoto ? '' : ' required-missing'}" id="pz-${cat.id}"
       onclick="document.getElementById('pf-${cat.id}').click()">
@@ -1178,7 +1178,7 @@ function renderCat(idx) {
         : `<div class="photo-required-badge">Required</div>
            <div class="photo-icon">📷</div>
            <div class="photo-zone-lbl">Tap to add a section photo</div>`}
-    </div>
+    </div>`;
 
     <div class="divider-label">Section Notes</div>
     <textarea class="section-note-field" placeholder="General observations for this section (optional)…"
